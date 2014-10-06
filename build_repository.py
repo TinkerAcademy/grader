@@ -1,3 +1,5 @@
+#!/usr/bin/python 
+
 import os
 import sys
 import syslog
@@ -9,13 +11,20 @@ BASE_LOCAL='/Users/ron/Dropbox/tinkeracademy/students'
 
 
 QUIZ_FILE_NAME_LIST = [
-	"Quiz2.odt"
+	"Quiz1.odt",
+	"Quiz2.odt",
+	"Quiz3.odt",
 ]
 
 HOMEWORK_FILE_NAME_LIST = [
 	"Homework2",
 	"Homework2.sb2",	
-	"Homework2.lua",	
+	"Homework2.lua",
+	"Homework2.zip",
+	"Homework3",
+	"Homework3.sb2",
+	"Homework3.lua",
+	"Homework3.zip",
 ]
 
 
@@ -73,23 +82,15 @@ def copy_homework_or_quiz_file(quiz_or_homework_file_name, target_file_paths):
 	ret &= ret2
 	return ret
 
-def grade_quizzes():	
+def copy_quizzes():	
 	for quiz_file_name in QUIZ_FILE_NAME_LIST:
 		target_file_paths = []
 		copy_homework_or_quiz_file(quiz_file_name, target_file_paths)
-		grade_quiz(quiz_file_name, target_file_paths)
 
-def grade_quiz(quiz_file_name, target_file_paths):
-	pass
-
-def grade_homeworks():	
+def copy_homeworks():	
 	for homework_file_name in HOMEWORK_FILE_NAME_LIST:
 		target_file_paths = []
 		copy_homework_or_quiz_file(homework_file_name, target_file_paths)
-		grade_homework(homework_file_name, target_file_paths)
-
-def grade_homework(quiz_file_name, target_file_paths):
-	pass
 
 def copy_files(source_file_paths, target_file_paths):
 	log_message('copy_files enter')
@@ -123,8 +124,8 @@ def log_error():
 	syslog.syslog('tinkeracademy error=' + value_.message)
 
 def main():
-	grade_quizzes()
-	grade_homeworks()
+	copy_quizzes()
+	copy_homeworks()
 
 if __name__ == "__main__":
 	main()
