@@ -8,6 +8,7 @@
 ###############################################################################
 
 import os
+import re
 import sys
 import syslog
 import errno
@@ -111,9 +112,9 @@ def unzip_quiz_file_contents():
 				log_message('error! unexpected content  (0 file size) in odt ' + str(absolute_path))							
 
 def grade_quizzes():
-	copy_solutions_to_grader_dir()
-	copy_quizzes_to_grader_dir()
-	unzip_quiz_file_contents()
+	# copy_solutions_to_grader_dir()
+	# copy_quizzes_to_grader_dir()
+	# unzip_quiz_file_contents()
 	prepare_reports()
 
 def prepare_reports():
@@ -152,8 +153,17 @@ def prepare_quiz_report(relative_path):
 										if get_text(solution_row) == 'Answer':
 											quiz_answer_row = get_sibling_table_row(quiz_row)
 											solution_answer_row = get_sibling_table_row(solution_row)
-											print 'student answer ', get_text(quiz_answer_row)
-											print 'solution answer ', get_text(solution_answer_row)
+											quiz_answer = get_text(quiz_answer_row)
+											solution_answer = get_text(solution_answer_row)
+											quiz_answer = quiz_answer.encode('utf-8')
+											solution_answer = solution_answer.encode('utf-8')
+											print 'student answer ', quiz_answer
+											print 'solution answer ', solution_answer
+											is_correct = grade_answer(quiz_answer, solution_answer)
+											if is_correct:
+												print 'the student got the RIGHT answer'
+											else:
+												print 'the student got the WRONG answer'
 							else:
 								print 'error! unexpected content (mismatch in row count) in odt content ', quiz_contents_path
 								log_message('error! unexpected content (mismatch in row count) in odt content ' + str(quiz_contents_path))
@@ -162,6 +172,76 @@ def prepare_quiz_report(relative_path):
 
 def prepare_homework_report(relative_path):
 	pass
+
+def grade_answer(quiz_answer, solution_answer):
+	lc_solution_answer = solution_answer.lower()
+	lc_solution_answer = lc_solution_answer.strip()
+	lc_quiz_answer = quiz_answer.lower()
+	if lc_quiz_answer:
+		if is_numeric_answer(lc_solution_answer):
+			if int(lc_solution_answer) == int(lc_quiz_answer):
+				return True
+		elif is_yes_no_answer(lc_solution_answer):
+			quiz_answer_yes_no = extract_yes_no(lc_quiz_answer, lc_solution_answer)
+			if quiz_answer and quiz_answer_yes_no == lc_solution_answer:
+				return True
+		elif is_x_y_answer(lc_solution_answer):
+			quiz_answer_digits = extract_x_y_numbers(lc_quiz_answer)
+			solution_answer_digits = extract_x_y_numbers(lc_solution_answer)
+			if quiz_answer_digits == solution_answer_digits:
+				return True
+		elif is_comma_delim_answer(lc_solution_answer):
+			solution_answer_comma = extract_comma_delim_answer(lc_solution_answer)
+			quiz_answer_comma = extract_comma_delim_answer(lc_quiz_answer)
+			if quiz_answer_comma == solution_answer_comma:
+				return True
+		else:
+			if lc_solution_answer == lc_quiz_answer:
+				return True
+	return False
+
+def represents_int(s):
+    try: 
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+def extract_yes_no(ans, sol):
+	if sol == 'no' and 'no' in ans:
+		return 'no'
+	if sol == 'yes' and 'yes' in ans:
+		return 'yes'
+	return None
+
+def extract_x_y_numbers(ans):
+	numbers = []
+	parts = re.split('x|y|,|\(|\)|=|\:|\+|-|\.| |\t|\n', ans)
+	parts = [int(s) for s in parts if represents_int(s)]
+	numbers.append(parts)
+	numbers = sorted(numbers)
+	return numbers
+
+def is_comma_delim_answer(ans):
+	if ',' in ans:
+		return True
+	return False
+
+def extract_comma_delim_answer(ans):
+	arr = []
+	if ans:
+		arr.extend([s.strip() for s in ans.split(',')])
+	arr = sorted(arr)
+	return arr
+
+def is_x_y_answer(ans):
+	return 'x:' in ans and 'y:' in ans	
+
+def is_yes_no_answer(ans):
+	return ans == 'no' or ans == 'yes'
+
+def is_numeric_answer(ans):
+	return represents_int(ans)
 
 def get_answer_table_rows(rows):
 	answer_rows = []
